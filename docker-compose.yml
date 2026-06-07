@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: myshop-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rick
+      POSTGRES_PASSWORD: 2011truyen
+      POSTGRES_DB: myshop
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d myshop']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myshop-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://rick:2011truyen@db:5432/myshop?schema=public
+    ports:
+      - '4000:4000'
+
+volumes:
+  postgres-data:
