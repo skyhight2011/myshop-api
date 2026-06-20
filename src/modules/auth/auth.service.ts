@@ -9,9 +9,20 @@ import { promisify } from 'util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const scryptAsync = promisify(scrypt);
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+const publicUserSelect = {
+  id: true,
+  email: true,
+  name: true,
+  phone: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class AuthService {
@@ -25,6 +36,7 @@ export class AuthService {
         data: {
           email: registerDto.email,
           name: registerDto.name,
+          phone: registerDto.phone,
           passwordHash,
         },
       });
@@ -89,6 +101,56 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: publicUserSelect,
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateProfileDto,
+      select: publicUserSelect,
+    });
+
+    return user;
+  }
+
+  getSessions(userId: number) {
+    return this.prisma.authSession.findMany({
+      where: {
+        userId,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async revokeSession(userId: number, sessionId: number) {
+    const deletedSession = await this.prisma.authSession.deleteMany({
+      where: { id: sessionId, userId },
+    });
+
+    if (deletedSession.count === 0) {
+      throw new UnauthorizedException('Session not found');
+    }
+
+    return { message: 'Session revoked successfully' };
+  }
+
   private async hashPassword(password: string): Promise<string> {
     const salt = randomBytes(16).toString('hex');
     const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
@@ -121,6 +183,8 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
+      phone: user.phone,
+      role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
