@@ -12,6 +12,8 @@ const publicUserSelect = {
   id: true,
   email: true,
   name: true,
+  phone: true,
+  role: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -23,7 +25,12 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     try {
       return await this.prisma.user.create({
-        data: createUserDto,
+        data: {
+          email: createUserDto.email,
+          name: createUserDto.name,
+          phone: createUserDto.phone,
+          role: createUserDto.role,
+        },
         select: publicUserSelect,
       });
     } catch (error) {
