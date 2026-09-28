@@ -5,7 +5,11 @@ import {
   OnModuleInit,
   type INestApplication,
 } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+const PRISMA_LOG_LEVELS = ['info', 'query', 'warn', 'error'] as const;
+
+type PrismaLogLevel = (typeof PRISMA_LOG_LEVELS)[number];
 
 @Injectable()
 export class PrismaService
@@ -36,10 +40,10 @@ export class PrismaService
     });
   }
 
-  private static resolveLogLevels(): Prisma.LogLevel[] {
+  private static resolveLogLevels(): PrismaLogLevel[] {
     const configuredLevels = process.env.PRISMA_LOG_LEVELS?.split(',')
       .map((level) => level.trim())
-      .filter(Boolean) as Prisma.LogLevel[] | undefined;
+      .filter((level): level is PrismaLogLevel => isPrismaLogLevel(level));
 
     if (configuredLevels?.length) {
       return configuredLevels;
@@ -49,4 +53,8 @@ export class PrismaService
       ? ['warn', 'error']
       : ['error'];
   }
+}
+
+function isPrismaLogLevel(level: string): level is PrismaLogLevel {
+  return PRISMA_LOG_LEVELS.some((logLevel) => logLevel === level);
 }

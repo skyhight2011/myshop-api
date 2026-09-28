@@ -1,6 +1,26 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+
+function toBoolean(value: unknown): unknown {
+  if (value === 'true' || value === true) {
+    return true;
+  }
+
+  if (value === 'false' || value === false) {
+    return false;
+  }
+
+  return value;
+}
 
 export class QueryProductsDto {
   @ApiPropertyOptional({ example: 1 })
@@ -23,10 +43,27 @@ export class QueryProductsDto {
   @IsInt()
   categoryId?: number;
 
-  @ApiPropertyOptional({ example: 'headphones' })
+  @ApiPropertyOptional({ example: 'cotton' })
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ example: 'Northwind' })
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) => toBoolean(value))
+  @IsBoolean()
+  isFeatured?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) => toBoolean(value))
+  @IsBoolean()
+  inStock?: boolean;
 
   @ApiPropertyOptional({ example: 10 })
   @IsOptional()
@@ -42,13 +79,16 @@ export class QueryProductsDto {
   @Min(0)
   maxPrice?: number;
 
-  @ApiPropertyOptional({ example: 'price' })
+  @ApiPropertyOptional({
+    example: 'price',
+    enum: ['price', 'name', 'createdAt'],
+  })
   @IsOptional()
-  @IsString()
+  @IsIn(['price', 'name', 'createdAt'])
   sortBy?: 'price' | 'name' | 'createdAt' = 'createdAt';
 
-  @ApiPropertyOptional({ example: 'desc' })
+  @ApiPropertyOptional({ example: 'desc', enum: ['asc', 'desc'] })
   @IsOptional()
-  @IsString()
+  @IsIn(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc' = 'desc';
 }
