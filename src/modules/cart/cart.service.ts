@@ -61,6 +61,14 @@ export class CartService {
       );
     }
 
+    if (product.variants.length > 0 && !variant) {
+      throw new BadRequestException('Select a product variant');
+    }
+
+    if (variant && !variant.isActive) {
+      throw new BadRequestException('This variant is no longer available');
+    }
+
     const availableStock = variant ? variant.stock : product.stock;
 
     if (availableStock < addCartItemDto.quantity) {
@@ -109,6 +117,10 @@ export class CartService {
 
     if (!item) {
       throw new NotFoundException(`Cart item with id ${itemId} not found`);
+    }
+
+    if (!item.product.isActive || (item.variant && !item.variant.isActive)) {
+      throw new BadRequestException('This item is no longer available');
     }
 
     const availableStock = item.variant

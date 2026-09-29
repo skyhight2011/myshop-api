@@ -91,6 +91,12 @@ export class OrdersService {
           );
         }
 
+        if (item.variant && !item.variant.isActive) {
+          throw new BadRequestException(
+            `${item.product.name} (${item.variant.name}) is no longer available`,
+          );
+        }
+
         if (availableStock < item.quantity) {
           throw new BadRequestException(
             `Insufficient stock for ${item.product.name}`,

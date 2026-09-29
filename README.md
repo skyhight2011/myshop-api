@@ -15,7 +15,7 @@ pnpm run start:dev
 Default local database URL in `.env`:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/myshop?schema=public"
+DATABASE_URL="postgresql://rick:2011truyen@localhost:5432/myshop?schema=public"
 ```
 
 ## User CRUD API
@@ -38,8 +38,23 @@ User model:
 
 ## Docker (API + PostgreSQL)
 
+Env files:
+
+- `.env.development` — local API and Compose defaults
+- `.env.uat` — UAT placeholders; pass a real `DATABASE_URL` at deploy time
+- `.env.production` — production placeholders; pass a real `DATABASE_URL` at deploy time
+
+The image reads `APP_ENV` (`development`, `uat`, or `production`) and loads `.env.<APP_ENV>`. Variables already set on the container are kept.
+
 ```bash
 docker compose up --build
+```
+
+UAT or production image:
+
+```bash
+docker build --build-arg APP_ENV=uat -t myshop-api:uat .
+docker build --build-arg APP_ENV=production -t myshop-api:production .
 ```
 
 This starts:
@@ -47,11 +62,7 @@ This starts:
 - PostgreSQL on `localhost:5432`
 - API on `localhost:4000`
 
-Inside Docker, the API connects to PostgreSQL via:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@db:5432/myshop?schema=public
-```
+Inside Docker Compose, the API connects to PostgreSQL via hostname `db`.
 
 ## Useful commands
 

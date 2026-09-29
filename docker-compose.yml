@@ -4,15 +4,19 @@ services:
     container_name: myshop-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: rick
-      POSTGRES_PASSWORD: 2011truyen
-      POSTGRES_DB: myshop
+      POSTGRES_USER: ${POSTGRES_USER:-rick}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-2011truyen}
+      POSTGRES_DB: ${POSTGRES_DB:-myshop}
     ports:
       - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d myshop']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-rick} -d ${POSTGRES_DB:-myshop}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,16 +25,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        APP_ENV: ${APP_ENV:-development}
     container_name: myshop-api
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env.${APP_ENV:-development}
     environment:
-      PORT: 4000
-      DATABASE_URL: postgresql://rick:2011truyen@db:5432/myshop?schema=public
+      APP_ENV: ${APP_ENV:-development}
+      # Container hostname is the Compose service name, not localhost.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rick}:${POSTGRES_PASSWORD:-2011truyen}@db:5432/${POSTGRES_DB:-myshop}?schema=public
     ports:
-      - '4000:4000'
+      - '${PORT:-4000}:${PORT:-4000}'
 
 volumes:
   postgres-data:
